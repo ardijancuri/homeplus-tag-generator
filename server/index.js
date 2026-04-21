@@ -5,6 +5,7 @@ import { PDFDocument, rgb } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { drawTemplate6Page, isTemplate6, prepareTemplate6Assets } from './template-overlays.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -68,6 +69,25 @@ app.post('/api/generate-pdf', async (req, res) => {
         const { width, height } = firstPage.getSize()
 
         console.log(`PDF dimensions: ${width} x ${height} points`)
+
+        if (isTemplate6(selectedTemplate)) {
+            const template6Assets = await prepareTemplate6Assets(pdfDoc)
+
+            drawTemplate6Page({
+                page: firstPage,
+                formData,
+                regularFont,
+                boldFont,
+                mediumFont,
+                assets: template6Assets,
+            })
+
+            const pdfBytes = await pdfDoc.save()
+            res.setHeader('Content-Type', 'application/pdf')
+            res.setHeader('Content-Disposition', 'attachment; filename=generated.pdf')
+            res.send(Buffer.from(pdfBytes))
+            return
+        }
 
         /**
          * FIELD POSITIONS CONFIGURATION FOR EACH TEMPLATE
@@ -289,6 +309,9 @@ app.post('/api/generate-pdf-batch', async (req, res) => {
         const regularFont = await finalPdfDoc.embedFont(futuraBookBytes)
         const boldFont = await finalPdfDoc.embedFont(futuraBoldBytes)
         const mediumFont = await finalPdfDoc.embedFont(futuraDemiBytes)
+        const template6Assets = isTemplate6(selectedTemplate)
+            ? await prepareTemplate6Assets(finalPdfDoc)
+            : null
 
         // Define text color
         const textColor = rgb(55 / 255, 52 / 255, 53 / 255)
@@ -373,6 +396,20 @@ app.post('/api/generate-pdf-batch', async (req, res) => {
             // Load template for this page
             const templateDoc = await PDFDocument.load(templateBytes)
             const [templatePage] = await finalPdfDoc.copyPages(templateDoc, [0])
+
+            if (template6Assets) {
+                drawTemplate6Page({
+                    page: templatePage,
+                    formData: product,
+                    regularFont,
+                    boldFont,
+                    mediumFont,
+                    assets: template6Assets,
+                })
+
+                finalPdfDoc.addPage(templatePage)
+                continue
+            }
 
             // Draw each field on the page
             for (let i = 1; i <= 6; i++) {

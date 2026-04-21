@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Futura Cyrillic Book';
+  src: url('../server/fonts/FuturaCyrillicBook.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura Cyrillic Demi';
+  src: url('../server/fonts/FuturaCyrillicDemi.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Futura Cyrillic Bold';
+  src: url('../server/fonts/FuturaCyrillicBold.ttf') format('truetype');
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -45,5 +63,17 @@
 
   .card {
     @apply bg-white rounded-2xl border-2 border-slate-300 p-8 backdrop-blur-sm;
+  }
+
+  .font-futura-book {
+    font-family: 'Futura Cyrillic Book', 'Inter', sans-serif;
+  }
+
+  .font-futura-demi {
+    font-family: 'Futura Cyrillic Demi', 'Inter', sans-serif;
+  }
+
+  .font-futura-bold {
+    font-family: 'Futura Cyrillic Bold', 'Inter', sans-serif;
   }
 }

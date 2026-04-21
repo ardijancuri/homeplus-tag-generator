@@ -1,33 +1,20 @@
 import { useState } from 'react'
-
-// Import all template images
-import base2Img from './images/base2.jpg'
-import base3Img from './images/base3.jpg'
-import base5Img from './images/base5.jpg'
-import base7Img from './images/base7.jpg'
-import comboLogo from './images/combo-logo.svg'
+import { generateBatchPdfBlob, generatePdfBlob } from './pdfGenerator'
+import { homePlusHeaderLogo as homePlusLogo, templateCatalog as templates } from './templateAssets'
+import { getEditableTemplateLayout } from './templateLayouts'
 
 function App() {
-    // Template definitions - keep only the second row options
-    const templates = [
-        { id: 'base3', name: 'Template 5 - Discount Alt', image: base3Img },
-        { id: 'base2', name: 'Template 6 - Best Price Alt', image: base2Img },
-        { id: 'base5', name: 'Template 7 - Top Product Alt', image: base5Img },
-        { id: 'base7', name: 'Template 8 - Super Combo Alt', image: base7Img },
-    ]
-
     // State for template selection
     const [selectedTemplate, setSelectedTemplate] = useState(null)
     const [step, setStep] = useState('select') // 'select' or 'form'
 
-    // State for all 6 form fields
+    // State for all editable form fields
     const [formData, setFormData] = useState({
         field1: '', // Discount percentage
         field2: '', // Product name
         field3: '', // Original price
         field4: '', // Discounted price
         field5: '', // Product code
-        field6: ''  // Dimensions
     })
 
     const [isLoading, setIsLoading] = useState(false)
@@ -37,6 +24,194 @@ function App() {
     const [csvData, setCsvData] = useState([])
     const [isBatchMode, setIsBatchMode] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
+
+    const visibleFieldKeys = new Set(
+        (selectedTemplate ? getEditableTemplateLayout(selectedTemplate) : [])
+            .filter(item => item.type === 'text' && item.fieldKey)
+            .map(item => item.fieldKey)
+    )
+
+    const renderTemplatePreview = (template, variant = 'card') => {
+        if (!template) {
+            return null
+        }
+
+        return (
+            <div className="relative w-full h-full">
+                <img
+                    src={template.image}
+                    alt={template.name}
+                    className="w-full h-full object-cover"
+                />
+            </div>
+        )
+
+        if (template.id === 'base2') {
+            const layoutItems = getEditableTemplateLayout(template.id)
+
+            return (
+                <div className="relative w-full h-full overflow-hidden bg-[#FEBE10]">
+                    {layoutItems.map(item => {
+                        const itemStyle = {
+                            left: `${item.x * 100}%`,
+                            top: `${item.y * 100}%`,
+                            width: `${item.w * 100}%`,
+                            height: `${item.h * 100}%`,
+                        }
+
+                        if (item.type === 'image') {
+                            return (
+                                <div key={item.id} className="absolute" style={itemStyle}>
+                                    <img
+                                        src={templateAssetImages[item.assetKey]}
+                                        alt=""
+                                        aria-hidden="true"
+                                        className="h-full w-full object-contain"
+                                    />
+                                </div>
+                            )
+                        }
+
+                        const isDiscountItem = item.fieldKey === 'field1'
+                        const isOldPriceItem = item.fieldKey === 'field3'
+                        const isNewPriceItem = item.fieldKey === 'field4'
+                        const textValue = sampleFieldValues[item.fieldKey] || item.label
+
+                        return (
+                            <div key={item.id} className="absolute" style={itemStyle}>
+                                <div
+                                    className={`${fontClassByKey[item.fontKey] || 'font-futura-demi'} h-full w-full ${isDiscountItem ? 'bg-[#ef3b36] text-white' : 'text-[#231f20]'}`}
+                                    style={{
+                                        fontSize: isDiscountItem ? '82%' : '100%',
+                                        lineHeight: `${(item.lineHeight || item.h * 1.1) * 100}%`,
+                                        whiteSpace: item.wrap ? 'normal' : 'nowrap',
+                                        overflow: 'hidden',
+                                        boxSizing: 'border-box',
+                                        paddingLeft: isDiscountItem ? '9%' : undefined,
+                                        display: isDiscountItem ? 'flex' : undefined,
+                                        alignItems: isDiscountItem ? 'center' : undefined,
+                                        borderTopLeftRadius: isDiscountItem ? '999px' : undefined,
+                                        borderBottomLeftRadius: isDiscountItem ? '999px' : undefined,
+                                        borderTopRightRadius: isDiscountItem ? '0px' : undefined,
+                                        borderBottomRightRadius: isDiscountItem ? '999px' : undefined,
+                                        transform: isOldPriceItem ? 'translateY(6%)' : undefined,
+                                        letterSpacing: isNewPriceItem ? '-0.05em' : undefined,
+                                    }}
+                                >
+                                    {textValue}
+                                </div>
+                                {isOldPriceItem && (
+                                    <div className="absolute left-0 top-[40%] h-[7%] w-[118%] -rotate-[13deg] bg-[#ef3b36]"></div>
+                                )}
+                                {isNewPriceItem && (
+                                    <div className="absolute left-[105%] top-[18%] text-[26%] leading-none tracking-[-0.03em] text-[#231f20] font-futura-bold">
+                                        ДЕН
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            )
+        }
+
+        if (template.id === 'base2') {
+            const isThumb = variant === 'thumb'
+
+            return (
+                <div className="relative w-full h-full overflow-hidden bg-[#FEBE10]">
+                    <img
+                        src={group231Img}
+                        alt=""
+                        aria-hidden="true"
+                        className={isThumb
+                            ? 'absolute left-[7%] top-[5.5%] w-[68%]'
+                            : 'absolute left-[6.5%] top-[5.5%] w-[66%]'
+                        }
+                    />
+                    <div className={isThumb
+                        ? 'absolute left-[7%] top-[31%] h-[13.5%] w-[40%] bg-[#ef3b36]'
+                        : 'absolute left-[6.5%] top-[29%] h-[14%] w-[40%] bg-[#ef3b36]'
+                    } style={isThumb
+                        ? {
+                            borderTopLeftRadius: '999px',
+                            borderBottomLeftRadius: '999px',
+                            borderTopRightRadius: '0px',
+                            borderBottomRightRadius: '999px',
+                        }
+                        : {
+                            borderTopLeftRadius: '999px',
+                            borderBottomLeftRadius: '999px',
+                            borderTopRightRadius: '0px',
+                            borderBottomRightRadius: '999px',
+                        }
+                    }></div>
+                    <div className={isThumb
+                        ? 'absolute left-[9.8%] top-[32.5%] text-[16px] leading-none tracking-[-0.04em] text-white font-futura-bold'
+                        : 'absolute left-[9.8%] top-[30.8%] text-[44px] leading-none tracking-[-0.04em] text-white font-futura-bold'
+                    }>
+                        -30%
+                    </div>
+                    <div className={isThumb
+                        ? 'absolute left-[8.5%] top-[45.5%] text-[9px] leading-none tracking-[-0.03em] text-[#231f20] font-futura-demi'
+                        : 'absolute left-[8.5%] top-[44%] text-[24px] leading-none tracking-[-0.03em] text-[#231f20] font-futura-demi'
+                    }>
+                        900,-
+                    </div>
+                    <div className={isThumb
+                        ? 'absolute left-[8.4%] top-[48.8%] h-[1.5px] w-[22%] -rotate-[13deg] bg-[#ef3b36]'
+                        : 'absolute left-[8.4%] top-[47.7%] h-[3px] w-[22%] -rotate-[13deg] bg-[#ef3b36]'
+                    }></div>
+                    <div className={isThumb
+                        ? 'absolute left-[6.5%] top-[50.6%] text-[40px] leading-none tracking-[-0.05em] text-[#231f20] font-futura-bold'
+                        : 'absolute left-[6%] top-[48.8%] text-[108px] leading-none tracking-[-0.05em] text-[#231f20] font-futura-bold'
+                    }>
+                        600,-
+                    </div>
+                    <div className={isThumb
+                        ? 'absolute left-[65%] top-[56%] text-[10px] leading-none tracking-[-0.03em] text-[#231f20] font-futura-bold'
+                        : 'absolute left-[65%] top-[54.8%] text-[28px] leading-none tracking-[-0.03em] text-[#231f20] font-futura-bold'
+                    }>
+                        ДЕН
+                    </div>
+                    {!isThumb && (
+                        <>
+                            <div className="absolute left-[8%] top-[66.5%] text-[11px] leading-tight text-[#231f20] font-futura-demi">
+                                Ѕидни модуларни рафтови x3
+                            </div>
+                            <div className="absolute left-[8%] top-[71%] text-[10px] leading-tight text-[#231f20] font-futura-demi">
+                                90 423 322
+                            </div>
+                            <img
+                                src={template6FooterLogo}
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute left-[8%] top-[82.5%] w-[29%]"
+                            />
+                        </>
+                    )}
+                    {isThumb && (
+                        <img
+                            src={template6FooterLogo}
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute left-[8%] top-[82.5%] w-[29%]"
+                        />
+                    )}
+                </div>
+            )
+        }
+
+        return (
+            <div className="relative w-full h-full">
+                <img
+                    src={template.image}
+                    alt={template.name}
+                    className="w-full h-full object-cover"
+                />
+            </div>
+        )
+    }
 
     // Handle template selection
     const handleTemplateSelect = (templateId) => {
@@ -69,26 +244,26 @@ function App() {
             return field
         }
         
-        // Headers matching the field order: field1, field2, field3, field4, field5, field6
+        // Headers matching the field order: field1, field2, field3, field4, field5
         const headers = [
             'Discount Percentage',  // field1
             'Product Name',         // field2
             'Original Price',        // field3
             'Discounted Price',     // field4
             'Product Code',         // field5
-            'Dimensions'            // field6
         ]
         
         // Sample data matching the same order (all price fields use whole numbers, no decimals)
         const sampleData = [
             '40',                                      // field1 - Discount Percentage (whole number, no decimals)
             'ЌЕБЕ СО ДЕЗЕН',                         // field2 - Product Name
-            '800',                                     // field3 - Original Price (whole number, no decimals)
-            '480',                                     // field4 - Discounted Price (whole number, no decimals)
+            '800,-',                                   // field3 - Original Price
+            '480,-',                                   // field4 - Discounted Price
             '246403',                                 // field5 - Product Code
             'Димензии: 200 cm x 230 cm'               // field6 - Dimensions
         ]
-        
+        sampleData.length = 5
+
         // Properly format CSV with quoted fields
         const csvContent = [
             headers.map(escapeCsvField).join(','),
@@ -205,19 +380,18 @@ function App() {
                         }
                     }
                     
-                    // Map columns to field names (order: field1, field2, field3, field4, field5, field6)
+                    // Map columns to field names (order: field1, field2, field3, field4, field5)
                     return {
                         field1: discountPercentage, // Discount Percentage (with % added automatically)
                         field2: fields[1] || '', // Product Name
                         field3: originalPrice, // Original Price (with ",-" added automatically)
                         field4: discountedPrice, // Discounted Price (with ",-" added automatically)
                         field5: fields[4] || '', // Product Code
-                        field6: fields[5] || ''  // Dimensions
                     }
                 }).filter(product => {
                     // Filter out completely empty rows
                     return product.field1 || product.field2 || product.field3 || 
-                           product.field4 || product.field5 || product.field6
+                           product.field4 || product.field5
                 })
                 
                 if (parsedData.length === 0) {
@@ -286,6 +460,17 @@ function App() {
         setSuccess(false)
     }
 
+    const downloadBlob = (blob, filename) => {
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+    }
+
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -294,76 +479,20 @@ function App() {
         setSuccess(false)
 
         try {
-            // Check if we're in batch mode with CSV data
             if (isBatchMode && csvData.length > 0) {
-                // Batch processing for CSV data
                 console.log('Batch generating PDFs for', csvData.length, 'products')
-                
-                const response = await fetch('/api/generate-pdf-batch', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        products: csvData,
-                        template: selectedTemplate
-                    }),
-                })
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate batch PDFs')
-                }
-
-                // Get the PDF blob
-                const blob = await response.blob()
-
-                // Create a download link and trigger download
-                const url = window.URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `price-tags-batch-${csvData.length}-items.pdf`
-                document.body.appendChild(a)
-                a.click()
-
-                // Cleanup
-                window.URL.revokeObjectURL(url)
-                document.body.removeChild(a)
+                const blob = await generateBatchPdfBlob(csvData, selectedTemplate)
+                downloadBlob(blob, `price-tags-batch-${csvData.length}-items.pdf`)
 
                 setSuccess(true)
                 setTimeout(() => setSuccess(false), 3000)
             } else {
-                // Single PDF generation
-                console.log('Sending to backend:', { ...formData, template: selectedTemplate })
-                
-                const response = await fetch('/api/generate-pdf', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        ...formData,
-                        template: selectedTemplate
-                    }),
+                console.log('Generating PDF in browser:', { ...formData, template: selectedTemplate })
+                const blob = await generatePdfBlob({
+                    ...formData,
+                    template: selectedTemplate
                 })
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate PDF')
-                }
-
-                // Get the PDF blob
-                const blob = await response.blob()
-
-                // Create a download link and trigger download
-                const url = window.URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = 'generated.pdf'
-                document.body.appendChild(a)
-                a.click()
-
-                // Cleanup
-                window.URL.revokeObjectURL(url)
-                document.body.removeChild(a)
+                downloadBlob(blob, 'generated.pdf')
 
                 setSuccess(true)
                 setTimeout(() => setSuccess(false), 3000)
@@ -381,11 +510,11 @@ function App() {
                 {/* Header */}
                 <div className="text-center mb-6">
                     {step === 'select' ? (
-                        <div className="mb-4 flex justify-center">
+                        <div className="mb-4 flex flex-col items-center gap-3">
                             <img 
-                                src={comboLogo} 
-                                alt="COMBO Logo" 
-                                className="h-8 md:h-8 w-auto"
+                                src={homePlusLogo} 
+                                alt="HOME+ Logo" 
+                                className="h-10 md:h-12 w-auto"
                             />
                         </div>
                     ) : (
@@ -410,16 +539,12 @@ function App() {
                                 <div
                                     key={template.id}
                                     onClick={() => handleTemplateSelect(template.id)}
-                                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105 w-full max-w-[340px] md:max-w-[240px]"
+                                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105 w-full max-w-[360px] md:max-w-[255px]"
                                 >
                                     <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-slate-200 transition-all" onMouseEnter={(e) => e.currentTarget.style.borderColor = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgb(226 232 240)'}>
                                         {/* Template Image */}
                                         <div className="aspect-[3/4] overflow-hidden bg-slate-100">
-                                            <img
-                                                src={template.image}
-                                                alt={template.name}
-                                                className="w-full h-full object-cover"
-                                            />
+                                            {renderTemplatePreview(template, 'card')}
                                         </div>
                                         {/* Template Name */}
                                         <div className="p-2 py-1 text-center bg-gradient-to-br from-slate-50 to-slate-50 group-hover:bg-red-50 transition-colors">
@@ -469,11 +594,7 @@ function App() {
                             <div className="mb-6 p-4 rounded-xl border-2" style={{ backgroundColor: 'rgba(230, 52, 37, 0.1)', borderColor: 'rgba(230, 52, 37, 0.3)' }}>
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-20 rounded-lg overflow-hidden shadow-md border-2" style={{ borderColor: 'rgba(230, 52, 37, 0.4)' }}>
-                                        <img
-                                            src={templates.find(t => t.id === selectedTemplate)?.image}
-                                            alt="Selected template"
-                                            className="w-full h-full object-cover"
-                                        />
+                                        {renderTemplatePreview(templates.find(t => t.id === selectedTemplate), 'thumb')}
                                     </div>
                                     <div>
                                         <p className="text-sm text-slate-600">Selected Template:</p>
@@ -591,8 +712,8 @@ function App() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                             {/* Left Column - Fields 1, 2, 3 */}
                             <div className="space-y-4 md:space-y-6">
-                                {/* Field 1 - Discount Percentage (hidden for Template 2 - base1, Template 3 - base2, Template 5 - base4, Template 6 - base5, Template 7 - base6, and Template 8 - base7) */}
-                                {selectedTemplate !== 'base1' && selectedTemplate !== 'base2' && selectedTemplate !== 'base4' && selectedTemplate !== 'base5' && selectedTemplate !== 'base6' && selectedTemplate !== 'base7' && (
+                                {/* Field 1 - Discount Percentage */}
+                                {visibleFieldKeys.has('field1') && (
                                     <div className="group">
                                         <label htmlFor="field1" className="block text-sm font-semibold text-slate-700 mb-2 transition-colors flex items-center gap-2" onMouseEnter={(e) => e.currentTarget.style.color = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgb(51 65 85)'}>
                                             <i className="fas fa-tag" style={{ color: '#E63425' }}></i>
@@ -611,6 +732,7 @@ function App() {
                                 )}
 
                                 {/* Field 2 - Product Name */}
+                                {visibleFieldKeys.has('field2') && (
                                 <div className="group">
                                         <label htmlFor="field2" className="block text-sm font-semibold text-slate-700 mb-2 transition-colors flex items-center gap-2" onMouseEnter={(e) => e.currentTarget.style.color = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgb(51 65 85)'}>
                                             <i className="fas fa-box" style={{ color: '#E63425' }}></i>
@@ -626,13 +748,14 @@ function App() {
                                         placeholder="e.g., ЌЕБЕ СО ДЕЗЕН"
                                     />
                                 </div>
+                                )}
 
-                                {/* Field 3 - Original Price (hidden for Template 2 - base1, Template 3 - base2, Template 5 - base4, Template 6 - base5, Template 7 - base6, and Template 8 - base7) */}
-                                {selectedTemplate !== 'base1' && selectedTemplate !== 'base2' && selectedTemplate !== 'base4' && selectedTemplate !== 'base5' && selectedTemplate !== 'base6' && selectedTemplate !== 'base7' && (
+                                {/* Field 3 - Original Price */}
+                                {visibleFieldKeys.has('field3') && (
                                     <div className="group">
                                         <label htmlFor="field3" className="block text-sm font-semibold text-slate-700 mb-2 transition-colors flex items-center gap-2" onMouseEnter={(e) => e.currentTarget.style.color = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgb(51 65 85)'}>
                                             <i className="fas fa-dollar-sign" style={{ color: '#E63425' }}></i>
-                                            Original Price (MKD)
+                                            Original Price
                                         </label>
                                         <input
                                             type="text"
@@ -650,10 +773,11 @@ function App() {
                             {/* Right Column - Fields 4, 5, 6 */}
                             <div className="space-y-4 md:space-y-6">
                                 {/* Field 4 - Discounted Price */}
+                                {visibleFieldKeys.has('field4') && (
                                 <div className="group">
                                     <label htmlFor="field4" className="block text-sm font-semibold text-slate-700 mb-2 transition-colors flex items-center gap-2" onMouseEnter={(e) => e.currentTarget.style.color = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgb(51 65 85)'}>
                                         <i className="fas fa-percent" style={{ color: '#E63425' }}></i>
-                                        Discounted Price (MKD)
+                                        Discounted Price
                                     </label>
                                     <input
                                         type="text"
@@ -665,8 +789,10 @@ function App() {
                                         placeholder="e.g., 480,-"
                                     />
                                 </div>
+                                )}
 
                                 {/* Field 5 - Product Code */}
+                                {visibleFieldKeys.has('field5') && (
                                 <div className="group">
                                     <label htmlFor="field5" className="block text-sm font-semibold text-slate-700 mb-2 transition-colors flex items-center gap-2" onMouseEnter={(e) => e.currentTarget.style.color = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgb(51 65 85)'}>
                                         <i className="fas fa-barcode" style={{ color: '#E63425' }}></i>
@@ -682,8 +808,10 @@ function App() {
                                         placeholder="e.g., 246403"
                                     />
                                 </div>
+                                )}
 
                                 {/* Field 6 - Dimensions */}
+                                {visibleFieldKeys.has('field6') && (
                                 <div className="group">
                                     <label htmlFor="field6" className="block text-sm font-semibold text-slate-700 mb-2 transition-colors flex items-center gap-2" onMouseEnter={(e) => e.currentTarget.style.color = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgb(51 65 85)'}>
                                         <i className="fas fa-ruler-combined" style={{ color: '#E63425' }}></i>
@@ -699,6 +827,7 @@ function App() {
                                         placeholder="e.g., Димензии: 200 cm x 230 cm"
                                     />
                                 </div>
+                                )}
                             </div>
                         </div>
                         </>

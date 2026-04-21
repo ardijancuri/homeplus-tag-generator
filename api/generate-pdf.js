@@ -3,6 +3,7 @@ import { PDFDocument, rgb } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { drawTemplate6Page, isTemplate6, prepareTemplate6Assets } from '../server/template-overlays.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -52,6 +53,25 @@ export default async function handler(req, res) {
         const { width, height } = firstPage.getSize()
 
         console.log(`PDF dimensions: ${width} x ${height} points`)
+
+        if (isTemplate6(selectedTemplate)) {
+            const template6Assets = await prepareTemplate6Assets(pdfDoc)
+
+            drawTemplate6Page({
+                page: firstPage,
+                formData,
+                regularFont,
+                boldFont,
+                mediumFont,
+                assets: template6Assets,
+            })
+
+            const pdfBytes = await pdfDoc.save()
+            res.setHeader('Content-Type', 'application/pdf')
+            res.setHeader('Content-Disposition', 'attachment; filename=generated.pdf')
+            res.send(Buffer.from(pdfBytes))
+            return
+        }
 
         /**
          * FIELD POSITIONS CONFIGURATION FOR EACH TEMPLATE

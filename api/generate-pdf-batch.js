@@ -3,6 +3,7 @@ import { PDFDocument, rgb } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { drawTemplate6Page, isTemplate6, prepareTemplate6Assets } from '../server/template-overlays.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -49,6 +50,9 @@ export default async function handler(req, res) {
         const regularFont = await finalPdfDoc.embedFont(futuraBookBytes)
         const boldFont = await finalPdfDoc.embedFont(futuraBoldBytes)
         const mediumFont = await finalPdfDoc.embedFont(futuraDemiBytes)
+        const template6Assets = isTemplate6(selectedTemplate)
+            ? await prepareTemplate6Assets(finalPdfDoc)
+            : null
 
         // Define text color
         const textColor = rgb(55 / 255, 52 / 255, 53 / 255) // #373435
@@ -129,7 +133,19 @@ export default async function handler(req, res) {
             const templateDoc = await PDFDocument.load(templateBytes)
             const [templatePage] = await finalPdfDoc.copyPages(templateDoc, [0])
             
-            const { width, height } = templatePage.getSize()
+            if (template6Assets) {
+                drawTemplate6Page({
+                    page: templatePage,
+                    formData: product,
+                    regularFont,
+                    boldFont,
+                    mediumFont,
+                    assets: template6Assets,
+                })
+
+                finalPdfDoc.addPage(templatePage)
+                continue
+            }
 
             // Draw each field on the page
             for (let i = 1; i <= 6; i++) {
