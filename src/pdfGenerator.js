@@ -263,6 +263,8 @@ function drawPriceText(page, { priceText, x, y, priceFont, priceSize, color, mai
     const suffixMatch = /^(.*?)(,-)$/u.exec(priceText)
 
     if (!suffixMatch) {
+        const fullWidth = priceFont.widthOfTextAtSize(priceText, priceSize)
+
         page.drawText(priceText, {
             x,
             y,
@@ -272,8 +274,9 @@ function drawPriceText(page, { priceText, x, y, priceFont, priceSize, color, mai
         })
 
         return {
-            textWidth: priceFont.widthOfTextAtSize(priceText, priceSize),
-            dashCenterX: x + priceFont.widthOfTextAtSize(priceText, priceSize),
+            textWidth: fullWidth,
+            mainWidth: fullWidth,
+            dashCenterX: x + fullWidth,
         }
     }
 
@@ -316,6 +319,7 @@ function drawPriceText(page, { priceText, x, y, priceFont, priceSize, color, mai
 
     return {
         textWidth: mainWidth + commaWidth + dashWidth - mainToCommaOverlap - commaToDashOverlap,
+        mainWidth,
         dashCenterX: dashX + dashWidth / 2,
     }
 }
@@ -500,13 +504,18 @@ function drawStoredLayoutPage({ page, layoutItems, formData, selectedTemplate, f
 
         if (item.fieldKey === 'field3') {
             const textWidth = priceMetrics?.textWidth ?? font.widthOfTextAtSize(displayValue, fontSize)
+            const mainTextWidth = priceMetrics?.mainWidth ?? textWidth
 
             if (isTemplate6StyleTemplate(selectedTemplate)) {
                 const textHeight = font.heightAtSize(fontSize, { descender: false })
-                const lineCenterX = absoluteX + Math.min(textWidth * 0.38, absoluteWidth * 0.34)
-                const lineCenterY = baselineY + textHeight * 0.30
-                const lineHalfWidth = Math.min(textWidth * 0.18, absoluteWidth * 0.16)
-                const lineHalfHeight = lineHalfWidth * Math.tan((55 * Math.PI) / 180)
+                const digitCount = (displayValue.match(/\d/g) || []).length
+                const lineAngleDegrees = digitCount >= 5 ? 40 : digitCount === 4 ? 50 : 55
+                const lineWidthRatio = digitCount >= 5 ? 0.17 : digitCount === 4 ? 0.19 : 0.18
+                const lineWidthCap = digitCount >= 5 ? 0.15 : digitCount === 4 ? 0.17 : 0.16
+                const lineCenterX = absoluteX + Math.min(mainTextWidth * 0.5, absoluteWidth * 0.42)
+                const lineCenterY = baselineY + textHeight * 0.36
+                const lineHalfWidth = Math.min(mainTextWidth * lineWidthRatio, absoluteWidth * lineWidthCap)
+                const lineHalfHeight = lineHalfWidth * Math.tan((lineAngleDegrees * Math.PI) / 180)
                 const lineStartX = lineCenterX - lineHalfWidth
                 const lineStartY = lineCenterY - lineHalfHeight
                 const lineEndX = lineCenterX + lineHalfWidth
