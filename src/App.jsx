@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { generateBatchPdfBlob, generatePdfBlob } from './pdfGenerator'
 import { homePlusHeaderLogo as homePlusLogo, templateCatalog as templates } from './templateAssets'
-import { getEditableTemplateLayout } from './templateLayouts'
+import { getEditableTemplateLayout, sampleFieldValues } from './templateLayouts'
 
 function App() {
     // State for template selection
@@ -30,6 +30,15 @@ function App() {
             .filter(item => item.type === 'text' && item.fieldKey)
             .map(item => item.fieldKey)
     )
+
+    const csvTemplateFields = selectedTemplate
+        ? getEditableTemplateLayout(selectedTemplate)
+            .filter(item => item.type === 'text' && item.fieldKey)
+            .map(item => ({
+                fieldKey: item.fieldKey,
+                label: item.label || item.fieldKey,
+            }))
+        : []
 
     const renderTemplatePreview = (template, variant = 'card') => {
         if (!template) {
@@ -236,6 +245,11 @@ function App() {
 
     // Handle CSV template download
     const handleDownloadTemplate = () => {
+        if (!selectedTemplate || csvTemplateFields.length === 0) {
+            setError('Select a template first to download its CSV template')
+            return
+        }
+
         // Helper function to properly escape CSV fields
         const escapeCsvField = (field) => {
             if (field.includes(',') || field.includes('"') || field.includes('\n')) {
@@ -244,14 +258,7 @@ function App() {
             return field
         }
         
-        // Headers matching the field order: field1, field2, field3, field4, field5
-        const headers = [
-            'Discount Percentage',  // field1
-            'Product Name',         // field2
-            'Original Price',        // field3
-            'Discounted Price',     // field4
-            'Product Code',         // field5
-        ]
+        const headers = csvTemplateFields.map(item => item.label)
         
         // Sample data matching the same order (all price fields use whole numbers, no decimals)
         const sampleData = [
@@ -270,6 +277,37 @@ function App() {
             sampleData.map(escapeCsvField).join(',')
         ].join('\n')
         
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = 'price-tag-template.csv'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+    }
+
+    const handleSelectedTemplateCsvDownload = () => {
+        if (!selectedTemplate || csvTemplateFields.length === 0) {
+            setError('Select a template first to download its CSV template')
+            return
+        }
+
+        const escapeCsvField = (field) => {
+            if (field.includes(',') || field.includes('"') || field.includes('\n')) {
+                return `"${field.replace(/"/g, '""')}"`
+            }
+            return field
+        }
+
+        const headers = csvTemplateFields.map(item => item.label)
+        const sampleData = csvTemplateFields.map(item => sampleFieldValues[item.fieldKey] || '')
+        const csvContent = [
+            headers.map(escapeCsvField).join(','),
+            sampleData.map(escapeCsvField).join(','),
+        ].join('\n')
+
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -415,10 +453,135 @@ function App() {
         reader.readAsText(file, 'UTF-8')
     }
 
+    const processSelectedTemplateCsvFile = (file) => {
+        if (!file) return
+
+        if (!selectedTemplate || csvTemplateFields.length === 0) {
+            setError('Select a template first before importing a CSV file')
+            return
+        }
+
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            setError('Please upload a CSV file')
+            return
+        }
+
+        setCsvFile(file)
+
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            try {
+                const text = event.target.result
+                const rows = text.split('\n').map(row => row.trim()).filter(row => row)
+
+                if (rows.length < 2) {
+                    setError('CSV file must contain at least a header row and one data row')
+                    return
+                }
+
+                const parseCsvRow = (row) => {
+                    const fields = []
+                    let currentField = ''
+                    let insideQuotes = false
+
+                    for (let i = 0; i < row.length; i++) {
+                        const char = row[i]
+                        const nextChar = row[i + 1]
+
+                        if (char === '"') {
+                            if (insideQuotes && nextChar === '"') {
+                                currentField += '"'
+                                i++
+                            } else {
+                                insideQuotes = !insideQuotes
+                            }
+                        } else if (char === ',' && !insideQuotes) {
+                            fields.push(currentField.trim())
+                            currentField = ''
+                        } else {
+                            currentField += char
+                        }
+                    }
+
+                    fields.push(currentField.trim())
+                    return fields
+                }
+
+                const normalizeFieldValue = (fieldKey, rawValue) => {
+                    const value = `${rawValue || ''}`.trim()
+
+                    if (!value) {
+                        return ''
+                    }
+
+                    if (fieldKey === 'field1') {
+                        const numericPart = value.replace(/%/g, '').trim()
+                        const numValue = parseFloat(numericPart)
+
+                        if (!isNaN(numValue) && Number.isInteger(numValue)) {
+                            return `${numValue}%`
+                        }
+
+                        if (!isNaN(numValue)) {
+                            return `${Math.round(numValue)}%`
+                        }
+                    }
+
+                    if (fieldKey === 'field3' || fieldKey === 'field4') {
+                        const numValue = parseFloat(value)
+
+                        if (!isNaN(numValue)) {
+                            return `${Math.round(numValue)},-`
+                        }
+                    }
+
+                    return value
+                }
+
+                const parsedData = rows.slice(1).map((row) => {
+                    const fields = parseCsvRow(row)
+                    const product = {
+                        field1: '',
+                        field2: '',
+                        field3: '',
+                        field4: '',
+                        field5: '',
+                    }
+
+                    csvTemplateFields.forEach((item, index) => {
+                        product[item.fieldKey] = normalizeFieldValue(item.fieldKey, fields[index] || '')
+                    })
+
+                    return product
+                }).filter(product => (
+                    product.field1 || product.field2 || product.field3 || product.field4 || product.field5
+                ))
+
+                if (parsedData.length === 0) {
+                    setError('No valid product data found in CSV file')
+                    return
+                }
+
+                setCsvData(parsedData)
+                setIsBatchMode(true)
+                setSuccess(false)
+                setError(null)
+            } catch (err) {
+                setError(`Failed to parse CSV file: ${err.message}`)
+            }
+        }
+
+        reader.onerror = () => {
+            setError('Failed to read CSV file')
+        }
+
+        reader.readAsText(file, 'UTF-8')
+    }
+
     // Handle CSV file upload
     const handleCsvUpload = (e) => {
         const file = e.target.files[0]
-        processCsvFile(file)
+        processSelectedTemplateCsvFile(file)
     }
 
     // Handle drag and drop
@@ -444,7 +607,7 @@ function App() {
             const csvFile = files.find(file => file.name.toLowerCase().endsWith('.csv'))
             
             if (csvFile) {
-                processCsvFile(csvFile)
+                processSelectedTemplateCsvFile(csvFile)
             } else {
                 setError('Please drop a CSV file')
             }
@@ -633,7 +796,7 @@ function App() {
                                     {/* Download Template Button */}
                                     <button
                                         type="button"
-                                        onClick={handleDownloadTemplate}
+                                        onClick={handleSelectedTemplateCsvDownload}
                                         className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-slate-300 text-slate-700 rounded-lg font-medium transition-all hover:border-slate-400 hover:shadow-md"
                                     >
                                         <i className="fas fa-download"></i>
