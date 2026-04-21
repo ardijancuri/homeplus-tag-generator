@@ -543,27 +543,14 @@ function App() {
                                 >
                                     <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-slate-200 transition-all" onMouseEnter={(e) => e.currentTarget.style.borderColor = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgb(226 232 240)'}>
                                         {/* Template Image */}
-                                        <div className="aspect-[3/4] overflow-hidden bg-slate-100">
+                                        <div className="aspect-[0.68/1] overflow-hidden bg-slate-100">
                                             {renderTemplatePreview(template, 'card')}
                                         </div>
                                         {/* Template Name */}
                                         <div className="p-2 py-1 text-center bg-gradient-to-br from-slate-50 to-slate-50 group-hover:bg-red-50 transition-colors">
-                                            <div className="block">
-                                                {template.name.includes(' - ') ? (
-                                                    <>
-                                                        <h3 className="font-semibold text-slate-800 text-sm md:text-sm leading-tight">
-                                                            {template.name.split(' - ')[0]}
-                                                        </h3>
-                                                        <p className="text-slate-600 text-xs md:text-xs leading-tight">
-                                                            {template.name.split(' - ')[1]}
-                                                        </p>
-                                                    </>
-                                                ) : (
-                                                    <h3 className="font-semibold text-slate-800 text-sm md:text-sm leading-tight">
-                                                        {template.name}
-                                                    </h3>
-                                                )}
-                                            </div>
+                                            <h3 className="font-semibold text-slate-800 text-sm md:text-sm leading-tight">
+                                                {template.name}
+                                            </h3>
                                         </div>
                                     </div>
                                 </div>

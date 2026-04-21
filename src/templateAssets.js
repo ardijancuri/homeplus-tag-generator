@@ -10,8 +10,8 @@ export const homePlusHeaderLogo = homePlusLogo
 export const templateAssetImages = {}
 
 export const templateCatalog = [
-    { id: 'base3', name: 'Template 5 - Discount Alt', image: base1Img },
-    { id: 'base2', name: 'Template 6 - Popust', image: base2Img },
-    { id: 'base5', name: 'Template 7 - Top Product Alt', image: base3Img },
-    { id: 'base7', name: 'Template 8 - Super Combo Alt', image: base4Img },
+    { id: 'base3', name: 'Template 1', image: base1Img },
+    { id: 'base2', name: 'Template 2', image: base2Img },
+    { id: 'base5', name: 'Template 3', image: base3Img },
+    { id: 'base7', name: 'Template 4', image: base4Img },
 ]
