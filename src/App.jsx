@@ -914,7 +914,7 @@ function App() {
                                             value={formData.field3}
                                             onChange={handleChange}
                                             className="input-field"
-                                            placeholder="e.g., 800,-"
+                                            placeholder="e.g., 800"
                                         />
                                     </div>
                                 )}
@@ -936,7 +936,7 @@ function App() {
                                         value={formData.field4}
                                         onChange={handleChange}
                                         className="input-field"
-                                        placeholder="e.g., 480,-"
+                                        placeholder="e.g., 480"
                                     />
                                 </div>
                                 )}

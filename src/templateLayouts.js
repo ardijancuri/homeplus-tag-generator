@@ -1,8 +1,8 @@
 export const sampleFieldValues = {
     field1: '-30%',
     field2: 'Product name text',
-    field3: '900,-',
-    field4: '600,-',
+    field3: '900',
+    field4: '600',
     field5: '323 559 110',
 }
 
