@@ -1,25 +1,15 @@
 import { useState } from 'react'
 
 // Import all template images
-import baseImg from './images/base.jpg'
-import base1Img from './images/base1.jpg'
 import base2Img from './images/base2.jpg'
 import base3Img from './images/base3.jpg'
-import base4Img from './images/base4.jpg'
 import base5Img from './images/base5.jpg'
-import base6Img from './images/base6.jpg'
 import base7Img from './images/base7.jpg'
 import comboLogo from './images/combo-logo.svg'
 
 function App() {
-    // Template definitions - Ordered for dashboard layout:
-    // Row 1: 1, 2, 5, 7
-    // Row 2: 4, 3, 6, 8
+    // Template definitions - keep only the second row options
     const templates = [
-        { id: 'base', name: 'Template 1 - Discount', image: baseImg },
-        { id: 'base1', name: 'Template 2 - Best Price', image: base1Img },
-        { id: 'base4', name: 'Template 3 - Top Product', image: base4Img },
-        { id: 'base6', name: 'Template 4 - Super Combo', image: base6Img },
         { id: 'base3', name: 'Template 5 - Discount Alt', image: base3Img },
         { id: 'base2', name: 'Template 6 - Best Price Alt', image: base2Img },
         { id: 'base5', name: 'Template 7 - Top Product Alt', image: base5Img },
@@ -413,14 +403,14 @@ function App() {
 
                 {/* Step 1: Template Selection */}
                 {step === 'select' && (
-                    <div className="space-y-8 max-w-4xl mx-auto">
+                    <div className="space-y-8 max-w-5xl mx-auto">
                         {/* Template Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 justify-items-center">
                             {templates.map((template) => (
                                 <div
                                     key={template.id}
                                     onClick={() => handleTemplateSelect(template.id)}
-                                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105 w-full max-w-[320px] md:max-w-[220px]"
+                                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105 w-full max-w-[340px] md:max-w-[240px]"
                                 >
                                     <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-slate-200 transition-all" onMouseEnter={(e) => e.currentTarget.style.borderColor = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgb(226 232 240)'}>
                                         {/* Template Image */}
