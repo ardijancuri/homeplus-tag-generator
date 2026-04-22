@@ -707,7 +707,11 @@ function App() {
                                     <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-slate-200 transition-all" onMouseEnter={(e) => e.currentTarget.style.borderColor = '#E63425'} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgb(226 232 240)'}>
                                         {/* Template Image */}
                                         <div className="aspect-[0.68/1] overflow-hidden bg-slate-100">
-                                            {renderTemplatePreview(template, 'card')}
+                                            <img
+                                                src={template.cardImage || template.image}
+                                                alt={template.name}
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                         {/* Template Name */}
                                         <div className="p-2 py-1 text-center bg-gradient-to-br from-slate-50 to-slate-50 group-hover:bg-red-50 transition-colors">
