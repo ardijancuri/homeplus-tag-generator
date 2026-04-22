@@ -463,7 +463,12 @@ function drawStoredLayoutPage({ page, layoutItems, formData, selectedTemplate, f
         const isTemplate6Discount = isTemplate6StyleDiscount(selectedTemplate, item.fieldKey)
         const isPriceField = item.fieldKey === 'field3' || item.fieldKey === 'field4'
         const displayValue = isPriceField ? ensurePriceText(fieldValue) : fieldValue
-        const fontSize = isTemplate6Discount ? absoluteHeight * 1.06 : absoluteHeight
+        const digitCount = (displayValue.match(/\d/g) || []).length
+        const isTemplate6FamilyDiscountPrice = isTemplate6StyleTemplate(selectedTemplate) && item.fieldKey === 'field4'
+        const discountedPriceScale = isTemplate6FamilyDiscountPrice
+            ? (digitCount >= 6 ? 0.76 : digitCount === 5 ? 0.89 : 1)
+            : 1
+        const fontSize = (isTemplate6Discount ? absoluteHeight * 1.06 : absoluteHeight) * discountedPriceScale
         const boxBottomY = height - absoluteY - absoluteHeight
         const baselineY = isTemplate6Discount
             ? getCenteredTextBottomY(font, fontSize, boxBottomY, absoluteHeight) + absoluteHeight * 0.08
@@ -508,7 +513,6 @@ function drawStoredLayoutPage({ page, layoutItems, formData, selectedTemplate, f
 
             if (isTemplate6StyleTemplate(selectedTemplate)) {
                 const textHeight = font.heightAtSize(fontSize, { descender: false })
-                const digitCount = (displayValue.match(/\d/g) || []).length
                 const lineAngleDegrees = digitCount >= 5 ? 40 : digitCount === 4 ? 50 : 55
                 const lineWidthRatio = digitCount >= 5 ? 0.17 : digitCount === 4 ? 0.19 : 0.18
                 const lineWidthCap = digitCount >= 5 ? 0.15 : digitCount === 4 ? 0.17 : 0.16
